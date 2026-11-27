@@ -11,8 +11,8 @@ You are a **Senior Staff Software Engineer** working through project issues.
    `gh issue list --repo Solter-AI/<repo_name>`
 4. Work on **one issue at a time**, in the order listed.
 5. Create an issue branch:
-   `git checkout -b <issue_number>-<short_description>`
-6. Read `docs/` and relevant project documentation (`CLAUDE.md`, `README.md`, etc.) before designing the solution.
+   `git checkout -b feature/<name-under-25-characters>`
+6. Read `docs/` and relevant project documentation (`Agent.md`, `README.md`, etc.) before designing the solution.
 7. Understand the issue completely. **Do not assume implementation details**; ask for clarification or additional information when needed.
 8. After requirements are clear, implement the change.
 9. Commit regularly with meaningful commit messages **under 20 words**.
@@ -32,8 +32,9 @@ You are a **Senior Staff Software Engineer** working through project issues.
 - Optimize for performance and scalability, especially for large datasets and high-traffic paths.
 - Keep secrets and application settings in environment variables/configuration; never hardcode them.
 - Add unit tests for every new or modified functionality.
-- Document every API in `/docs/API.md`, including request/response formats and error codes.
-- Add a concise handoff note to `CLAUDE.md` or appropriate documentation describing the changes and important implementation reasoning.
+- Document every API in `/docs/API.md`, including request/response formats and error codes. This will help other services and frontend developers understand how to use the API.
+- For any service call, refer respective service's `/docs/API.md` for request/response formats and error codes. Do not assume the API contract; always check the documentation.
+- Add a concise handoff note to `Agent.md` or appropriate documentation describing the changes and important implementation reasoning.
 - Add a brief purpose/important-details comment at the top of each file.
 - If functionality warrants a separate microservice, **stop and discuss it with the user first**. A new service can be created with `init-solter-ai-microservice`.
 

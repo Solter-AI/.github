@@ -1,0 +1,427 @@
+{
+  "organization": "Solter-AI",
+  "labels": [
+    {
+      "name": "phase-1",
+      "description": "Phase 1: MVP Core (Auth, KB, MCP, Voice Engine, Call Logs, Telephony)",
+      "color": "1f883d"
+    },
+    {
+      "name": "phase-2",
+      "description": "Phase 2: Ops & Launch (Campaigns, Contacts, RBAC CRUD, BYOK, Billing)",
+      "color": "0366d6"
+    },
+    {
+      "name": "phase-3",
+      "description": "Phase 3: Growth & Scale (SSO/SAML, URL/Drive Sync, OAuth MCP, Voice Cloning)",
+      "color": "6f42c1"
+    },
+    {
+      "name": "phase-4",
+      "description": "Phase 4: Enterprise & Super Admin (Internal Ops Console, Multi-Region HA, SOC2)",
+      "color": "b60205"
+    },
+    {
+      "name": "type:setup",
+      "description": "Initial setup/scaffolding work",
+      "color": "d4c5f9"
+    },
+    {
+      "name": "type:feature",
+      "description": "Feature development work",
+      "color": "bfdadc"
+    },
+    {
+      "name": "type:documentation",
+      "description": "Documentation & guides",
+      "color": "ffd3b6"
+    },
+    {
+      "name": "type:testing",
+      "description": "Testing & QA work",
+      "color": "a2eeef"
+    },
+    {
+      "name": "type:devops",
+      "description": "Deployment & infrastructure work",
+      "color": "fbca04"
+    },
+    {
+      "name": "priority:high",
+      "description": "Blocking/critical tasks",
+      "color": "d73a49"
+    },
+    {
+      "name": "priority:medium",
+      "description": "Important but not blocking",
+      "color": "ffa500"
+    },
+    {
+      "name": "priority:low",
+      "description": "Nice to have/non-blocking",
+      "color": "0e8a16"
+    }
+  ],
+  "services": [
+    {
+      "name": "solter-proto-contracts",
+      "techStack": "protobuf",
+      "repository": "solter-proto-contracts",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Define gRPC & Protobuf contracts for Voice, RAG, MCP, and Call Events",
+          "description": "### Context & Objective\nEstablish strongly-typed Protobuf v3 contracts shared across Spring Boot, Python (FastAPI), and Node.js (TypeScript) microservices.\n\n### Technical Tasks\n- [ ] Define `rag/v1/rag_service.proto` (`QueryChunksRequest`, `QueryChunksResponse` scoped by `tenant_id`)\n- [ ] Define `mcp/v1/mcp_gateway.proto` (`ExecuteToolRequest`, `ExecuteToolResponse` with HTTP status, latency_ms, and sanitized output)\n- [ ] Define `voice/v1/call_events.proto` (`CallStarted`, `TurnCompleted`, `ToolExecuted`, `CallEnded`, `HumanTransferRequested`)\n- [ ] Setup `buf.yaml` / `protoc` generation scripts for Java, Python, and TypeScript\n\n### Acceptance Criteria\n- [ ] `buf lint` and `buf build` pass with zero breaking warnings\n- [ ] Generated stubs compile cleanly in Java 21, Python 3.11, and TypeScript 5\n- [ ] All request messages enforce `tenant_id` field for strict multi-tenancy",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        }
+      ]
+    },
+    {
+      "name": "solter-api-gateway",
+      "techStack": "springboot",
+      "repository": "solter-api-gateway",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Configure Spring Cloud Gateway routing, JWT validation & Redis rate limiting",
+          "description": "### Context & Objective\nServe as the single ingress edge for `solter-web` and external REST API clients (`POST /v1/calls/outbound`), validating JWTs, Solter API Keys, and enforcing per-tenant rate limits.\n\n### Technical Tasks\n- [ ] Configure routes to `solter-tenant-service`, `solter-rag-service`, `solter-mcp-gateway`, `solter-voice-orchestrator`, `solter-telephony-bridge`, `solter-analytics-service`, and `solter-billing-service`\n- [ ] Implement `JwtAndApiKeyAuthFilter` extracting `tenant_id`, `user_id`, and `roles` into downstream headers (`X-Tenant-Id`, `X-User-Id`)\n- [ ] Configure Redis-backed `RequestRateLimiter` per `tenant_id` (returning HTTP 429 with `Retry-After`)\n- [ ] Configure centralized CORS policy for `solter-web`\n\n### Acceptance Criteria\n- [ ] Unauthenticated requests to `/api/v1/**` return HTTP 401\n- [ ] Valid Solter API key (`sltr_live_*`) routes `POST /v1/calls/outbound` with `X-Tenant-Id` header\n- [ ] Exceeding per-tenant burst limit returns HTTP 429\n- [ ] `/actuator/health` returns HTTP 200",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement OpenAPI aggregation & standardized RFC 7807 error responses",
+          "description": "### Context & Objective\nAggregate downstream Swagger/OpenAPI specs and ensure consistent `404`, `409`, `429`, and `500` JSON error payloads for `solter-web`.\n\n### Technical Tasks\n- [ ] Configure SpringDoc OpenAPI Gateway aggregation\n- [ ] Implement global `ErrorWebExceptionHandler` returning `{status, code, message, requestId, tenantId, timestamp}`\n- [ ] Add unit & WebTestClient integration tests\n\n### Acceptance Criteria\n- [ ] Gateway errors match RFC 7807 format expected by `solter-web` Error page\n- [ ] Unit/integration tests pass with >80% coverage",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Multi-Region Edge Routing & Super Admin Gateway Scope",
+          "description": "### Context & Objective\nSupport geo-aware routing across regional voice/telephony clusters and isolate `/api/v1/admin/**` routes for internal Solter AI Super Admins.\n\n### Technical Tasks\n- [ ] Configure region-aware weighted/latency routing headers (`X-Solter-Region`)\n- [ ] Enforce `ROLE_SUPER_ADMIN` + IP allowlist on `/api/v1/admin/**`\n\n### Acceptance Criteria\n- [ ] Non-Super-Admin tokens hitting `/api/v1/admin/**` return HTTP 403\n- [ ] Regional failover switches traffic automatically on downstream health check failure",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-tenant-service",
+      "techStack": "springboot",
+      "repository": "solter-tenant-service",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Setup Spring Boot, Flyway migrations & multi-tenant schema (users, orgs, agents, API keys)",
+          "description": "### Context & Objective\nEstablish the core identity, workspace (`tenant_id`), Voice Agent configuration, and Solter API Key persistence layer in PostgreSQL.\n\n### Technical Tasks\n- [ ] Configure Flyway migrations `V1__init_tenant_schema.sql` for `organizations`, `users`, `org_memberships`, `voice_agents`, and `solter_api_keys`\n- [ ] Implement `TenantContext` and strict `tenant_id` scoping on all queries\n- [ ] Setup Docker Compose with PostgreSQL 15 & Redis 7\n- [ ] Document endpoints in `/docs/API.md`\n\n### Acceptance Criteria\n- [ ] `mvn spring-boot:run` applies Flyway migrations cleanly\n- [ ] `/actuator/health` returns HTTP 200\n- [ ] Zero cross-tenant leakage in repository integration tests",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Auth (Email/Password, OTP verification, JWT) & Workspace Hub APIs",
+          "description": "### Context & Objective\nProvide registration, login, OTP email verification, JWT refresh/revocation (Redis), and multi-organization Workspace Hub APIs.\n\n### Technical Tasks\n- [ ] `POST /api/v1/auth/register`, `/login`, `/verify-otp`, `/refresh`, `/logout`\n- [ ] `GET /api/v1/workspaces` (list orgs user belongs to with role badges) & `POST /api/v1/workspaces` (create org)\n- [ ] `POST /api/v1/workspaces/{id}/api-keys` & `POST .../rotate` (masked `sltr_live_••••`)\n\n### Acceptance Criteria\n- [ ] Invalid credentials return HTTP 401; duplicate org/email returns HTTP 409\n- [ ] Logout blacklists JWT in Redis immediately\n- [ ] Unit & Testcontainers tests pass (>80% coverage)",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Voice Agents Studio CRUD & configuration deployment APIs",
+          "description": "### Context & Objective\nAllow admins to create, clone, configure, and deploy Voice Agent personas (voice model, speaking speed, greeting, system prompt, linked KB collections, enabled MCP tools, and fallback phone number).\n\n### Technical Tasks\n- [ ] `GET/POST/PUT/DELETE /api/v1/agents` and `POST /api/v1/agents/{id}/clone`\n- [ ] Enforce active agent slot limit from `solter-billing-service` (return HTTP 409 if slot limit reached)\n- [ ] Publish agent config update to Redis cache for <3s live pickup by `solter-voice-orchestrator`\n\n### Acceptance Criteria\n- [ ] Creating a 2nd active agent on Free tier returns HTTP 409 with upgrade metadata\n- [ ] Saved agent config is readable from Redis by voice orchestrator\n- [ ] Unit tests cover all validation & slot-limit edge cases",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Customizable Role CRUD, User Role Assignment, BYOK Vault & Delete Organization",
+          "description": "### Context & Objective\nSupport granular, customizable RBAC roles, per-user role assignment, AES-256 encrypted BYOK keys (for RAG & MCP LLMs), and permanent organization deletion.\n\n### Technical Tasks\n- [ ] `GET/POST/PUT/DELETE /api/v1/roles` with granular permission matrix (`agents:*`, `kb:*`, `mcp:secrets`, `calls:takeover`, `rbac:manage`, `org:delete`)\n- [ ] Protect built-in `Owner` role from deletion (HTTP 409)\n- [ ] `PUT /api/v1/members/{userId}/role` to assign custom roles\n- [ ] `GET/PUT /api/v1/settings/byok` (AES-256 encrypted RAG embedding & MCP LLM keys, masked on read)\n- [ ] `DELETE /api/v1/workspaces/{id}` requiring exact org name confirmation, revoking keys and cascading tenant deletion\n\n### Acceptance Criteria\n- [ ] Custom roles enforce module permissions at API boundary (HTTP 403 when unauthorized)\n- [ ] BYOK keys are encrypted at rest with AES-256 and never returned in plaintext\n- [ ] Org deletion cascades cleanly and invalidates all tenant API keys",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Contacts CRM, CSV Bulk Import & DNC Suppression APIs",
+          "description": "### Context & Objective\nProvide customer CRM CRUD, CSV/Excel bulk import with custom JSON metadata (`property_id`, `order_id`), segment filtering, and TRAI DND / workspace DNC suppression.\n\n### Technical Tasks\n- [ ] `GET/POST/PUT/DELETE /api/v1/contacts` and `POST /api/v1/contacts/import` (CSV parser)\n- [ ] `PATCH /api/v1/contacts/{id}/dnc` to toggle Do-Not-Call flag\n- [ ] Segment query endpoint for `solter-voice-orchestrator` campaigns\n\n### Acceptance Criteria\n- [ ] Bulk CSV import maps phone, name, and custom metadata columns\n- [ ] Contacts marked `dnc=true` are excluded from outbound campaign dialing",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Enterprise SSO (SAML 2.0 / OIDC) & SCIM Directory Sync",
+          "description": "### Context & Objective\nAllow enterprise B2B tenants to authenticate via Okta, Google Workspace, or Azure AD using SAML 2.0 / OIDC and auto-provision users.\n\n### Technical Tasks\n- [ ] Configure Spring Security SAML 2.0 & OIDC client per `tenant_id` domain mapping\n- [ ] Map IdP groups to Solter custom RBAC roles\n\n### Acceptance Criteria\n- [ ] Users with configured SSO domain redirect to their IdP and receive a tenant-scoped JWT\n- [ ] Integration tests verify SAML assertion parsing and role mapping",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Super Admin Tenant Management, Limit Overrides & SOC2/DPDP Audit Exports",
+          "description": "### Context & Objective\nEnable internal Solter AI Super Admins to inspect tenants, override concurrency/rate limits, suspend abusive workspaces, and export immutable audit logs.\n\n### Technical Tasks\n- [ ] `GET /api/v1/admin/tenants`, `PATCH /api/v1/admin/tenants/{id}/limits`, `POST .../suspend`\n- [ ] `GET /api/v1/admin/audit-logs/export` (JSON/CSV compliance bundle)\n\n### Acceptance Criteria\n- [ ] All Super Admin actions write immutable audit records with actor ID and reason\n- [ ] Limit overrides propagate to Redis within 5 seconds",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-rag-service",
+      "techStack": "python",
+      "repository": "solter-rag-service",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Setup FastAPI, PostgreSQL + pgvector & tenant-scoped document schema",
+          "description": "### Context & Objective\nScaffold the Python FastAPI RAG service with `pgvector` for tenant-isolated semantic search.\n\n### Technical Tasks\n- [ ] Configure FastAPI lifespan, `pydantic-settings`, SQLAlchemy async + `pgvector` extension\n- [ ] Create `kb_documents` (id, tenant_id, filename, status: `Processing|Ready|Failed`, chunk_count, error_message) and `kb_chunks` (embedding vector, content, metadata) tables\n- [ ] Implement `GET /health` checking DB & pgvector\n\n### Acceptance Criteria\n- [ ] `uvicorn main:app` boots cleanly and `GET /health` returns HTTP 200\n- [ ] `pgvector` HNSW/IVFFlat index created with `tenant_id` filter",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement PDF/Markdown/TXT ingestion pipeline, BYOK embeddings & semantic retrieval API",
+          "description": "### Context & Objective\nIngest uploaded documents (up to 20MB), chunk and embed using Org BYOK key or Solter managed tokens, and expose low-latency semantic retrieval.\n\n### Technical Tasks\n- [ ] `POST /api/v1/kb/documents` (multipart upload up to 20MB PDF/MD/TXT, async background extraction & embedding)\n- [ ] `GET /api/v1/kb/documents` & `DELETE /api/v1/kb/documents/{id}` (immediate vector removal)\n- [ ] `POST /api/v1/kb/retrieve` (returns top-k chunks with similarity score in <80ms, scoped by `tenant_id`)\n- [ ] Fetch tenant BYOK embedding key from `solter-tenant-service` (fallback to platform key) and report token usage\n\n### Acceptance Criteria\n- [ ] 10-page PDF finishes indexing to `Ready` in <30 seconds\n- [ ] Deleting a document immediately removes its chunks from retrieval results\n- [ ] Pytest suite achieves >80% coverage with mocked embedding API",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Live URL Crawling, Google Drive / Notion Sync & Scheduled Re-Indexing",
+          "description": "### Context & Objective\nAutomatically sync live company help centers, Notion workspaces, and Google Drive folders on a configurable daily schedule.\n\n### Technical Tasks\n- [ ] Implement URL sitemap/recursive crawler with robots.txt compliance\n- [ ] Implement Google Drive & Notion OAuth connector sync\n- [ ] Add cron/scheduler for daily delta re-indexing without downtime\n\n### Acceptance Criteria\n- [ ] Crawl job extracts clean markdown chunks and updates vectors atomically\n- [ ] Changed pages re-index without removing existing live search availability",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        }
+      ]
+    },
+    {
+      "name": "solter-mcp-gateway",
+      "techStack": "springboot",
+      "repository": "solter-mcp-gateway",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Setup Spring Boot MCP Gateway, OpenAPI 3.0/3.1 parser & AES-256 secret vault",
+          "description": "### Context & Objective\nParse uploaded OpenAPI 3.0/3.1 JSON/YAML specs into MCP tool definitions and store client API credentials encrypted with AES-256.\n\n### Technical Tasks\n- [ ] Integrate `swagger-parser` (`io.swagger.parser.v3`) to extract paths, HTTP methods, and flattened parameter schemas\n- [ ] Implement AES-256-GCM encryption utility for `Authorization: Bearer` and static API Key headers\n- [ ] Persist `mcp_specs`, `mcp_tools` (enabled boolean), and `mcp_secrets` scoped by `tenant_id`\n\n### Acceptance Criteria\n- [ ] Valid OpenAPI 3.0 JSON/YAML parses endpoints within 5 seconds\n- [ ] Secrets are encrypted at rest and masked (`sk-••••1234`) in all GET responses",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement MCP Tool toggle, Test Tool Sandbox & secure runtime execution proxy",
+          "description": "### Context & Objective\nExpose endpoints to toggle tools ON/OFF, test tools in a sandbox, and execute enabled tools mid-call with strict server-side credential injection.\n\n### Technical Tasks\n- [ ] `POST /api/v1/mcp/specs`, `PATCH /api/v1/mcp/tools/{id}/toggle`, `POST /api/v1/mcp/tools/{id}/test`\n- [ ] `POST /api/v1/mcp/execute` (invoked by `solter-voice-orchestrator`): injects decrypted auth header at server boundary, enforces 4s timeout, logs HTTP status & latency\n- [ ] Never return raw upstream credentials or stack traces to LLM prompt\n\n### Acceptance Criteria\n- [ ] Disabled tools return HTTP 403 if invoked\n- [ ] Upstream `500` or `>4s` timeout returns structured fallback error for graceful voice apology\n- [ ] Unit & WireMock integration tests pass (>80% coverage)",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement OAuth 2.0 Auto-Refresh Token Flows & Visual Multi-Step MCP Workflows",
+          "description": "### Context & Objective\nSupport OAuth 2.0 client-credentials/refresh-token flows for external CRMs and allow chaining multiple API calls into a single composite MCP tool.\n\n### Technical Tasks\n- [ ] Implement OAuth 2.0 token lifecycle manager with Redis lock during refresh\n- [ ] Support composite workflow definitions (e.g. `check_availability` -> `book_visit` -> `send_whatsapp`)\n\n### Acceptance Criteria\n- [ ] Expired OAuth tokens refresh transparently mid-call without dropping the request\n- [ ] Composite workflows execute sequentially and roll back or report step failures cleanly",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Partner MCP Pack SDK & Signed Connector Registry",
+          "description": "### Context & Objective\nAllow third-party developers and partners to publish verified, versioned MCP tool packs into the Solter Marketplace.\n\n### Technical Tasks\n- [ ] Define MCP Pack manifest schema, signature verification, and sandbox validation pipeline\n- [ ] Expose `POST /api/v1/admin/mcp-packs/publish` and tenant 1-click install hydration\n\n### Acceptance Criteria\n- [ ] Unsigned or schema-invalid packs are rejected with HTTP 400\n- [ ] Approved packs install into any tenant workspace in <2 seconds",
+          "type": "type:feature",
+          "priority": "priority:low",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-voice-orchestrator",
+      "techStack": "python",
+      "repository": "solter-voice-orchestrator",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Implement real-time voice turn pipeline (<600ms latency, <200ms barge-in, filler speech)",
+          "description": "### Context & Objective\nOrchestrate streaming ASR -> RAG retrieval + LLM reasoning (with Org BYOK or platform tokens) -> MCP tool execution -> streaming TTS audio.\n\n### Technical Tasks\n- [ ] Build WebSocket/WebRTC audio stream handler with <200ms barge-in interruption cancellation\n- [ ] Inject current date/time context so relative dates (e.g. 'next Thursday') resolve to `YYYY-MM-DD` and confirm aloud\n- [ ] Trigger natural filler speech when an MCP tool call exceeds 400ms\n- [ ] Handle prompt-injection guardrails & human-transfer intent detection\n\n### Acceptance Criteria\n- [ ] End-to-end turn latency p95 <600ms in benchmark tests\n- [ ] Barge-in stops TTS playback within <200ms\n- [ ] Failed/timed-out MCP tool triggers polite apology and human transfer offer",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement WebRTC Test Call Simulator, Outbound Campaigns & DNC/Window scheduler",
+          "description": "### Context & Objective\nSupport in-browser WebRTC agent testing (`Test Agent`), programmatic outbound calls (`POST /v1/calls/outbound`), and scheduled outbound campaigns with TRAI DND & calling-window enforcement.\n\n### Technical Tasks\n- [ ] `POST /api/v1/calls/outbound` & `POST /api/v1/agents/{id}/webrtc-session`\n- [ ] Campaign orchestrator (`GET/POST /api/v1/campaigns`, pause/resume) respecting calling windows (`09:00-20:00 IST`), DNC suppression, and retry backoff\n- [ ] Enforce concurrent call slot limits via `solter-billing-service`\n\n### Acceptance Criteria\n- [ ] WebRTC test session streams audio + live transcript + MCP tool trace\n- [ ] Campaigns skip DNC contacts and pause outside configured calling hours",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Multi-Language Code-Switching (Hinglish/Hindi/Tamil) & Custom Voice Cloning",
+          "description": "### Context & Objective\nSupport dynamic mid-call language switching (English, Hinglish, Hindi, Tamil) and tenant-uploaded custom brand voice cloning.\n\n### Technical Tasks\n- [ ] Integrate multilingual streaming ASR + language-aware TTS voice routing\n- [ ] Add custom voice clone enrollment endpoint with explicit DPDP consent check\n\n### Acceptance Criteria\n- [ ] Code-switched Hinglish utterances transcribe and respond naturally without <600ms SLA regression\n- [ ] Voice cloning rejects requests without verified consent flag",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Multi-Region Active-Active Orchestration & Graceful Degradation",
+          "description": "### Context & Objective\nScale voice orchestration across multiple regions (ap-south-1, us-east-1, ap-southeast-1) with automatic LLM/TTS provider failover for 99.9%+ uptime.\n\n### Technical Tasks\n- [ ] Implement circuit breakers for primary/secondary LLM & TTS providers\n- [ ] Support stateless Redis session handoff & regional health telemetry\n\n### Acceptance Criteria\n- [ ] Simulated primary TTS/LLM outage fails over to secondary provider within 500ms\n- [ ] Load tests sustain 500+ concurrent calls per region without audio jitter",
+          "type": "type:devops",
+          "priority": "priority:medium",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-telephony-bridge",
+      "techStack": "nodejs",
+      "repository": "solter-telephony-bridge",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Implement Plivo/Exotel +91 inbound/outbound SIP & WebSocket media bridge",
+          "description": "### Context & Objective\nConnect India `+91` (Exotel/Plivo) and global SIP trunks to `solter-voice-orchestrator` with low-latency bi-directional audio streaming and human call transfer.\n\n### Technical Tasks\n- [ ] Handle inbound call webhooks, lookup routed Voice Agent by dialed number, and bridge media stream\n- [ ] Implement outbound call dialer with 30s ring timeout and voicemail/no-answer detection\n- [ ] Implement `POST /api/v1/telephony/transfer` to bridge live call to fallback human number\n- [ ] Record call audio to object storage and emit call completion event within 10s\n\n### Acceptance Criteria\n- [ ] Outbound call connects and streams PCM/Opus audio with <50ms bridge overhead\n- [ ] Voicemail/no-answer hangs up cleanly and logs `No Answer` / `Voicemail`\n- [ ] Vitest unit tests pass with mocked Plivo/Exotel SDKs",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Phone Number provisioning CRUD & Live Call Whisper/Takeover controls",
+          "description": "### Context & Objective\nAllow admins to provision/assign phone numbers & custom SIP trunks, and allow supervisors to Whisper or Takeover live active calls.\n\n### Technical Tasks\n- [ ] `GET/POST/PATCH /api/v1/phone-numbers` (assign inbound number -> Voice Agent; return HTTP 409 on conflict)\n- [ ] `POST /api/v1/calls/{id}/whisper` & `POST /api/v1/calls/{id}/takeover`\n\n### Acceptance Criteria\n- [ ] Assigning a number already bound to another agent returns HTTP 409\n- [ ] Supervisor takeover bridges audio cleanly without dropping the customer",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Bring-Your-Own-Carrier (BYOC) SIP Trunking & TLS/SRTP Encryption",
+          "description": "### Context & Objective\nAllow enterprise clients to connect their existing Twilio, Asterisk, or Cisco SIP trunks directly with encrypted TLS/SRTP signaling.\n\n### Technical Tasks\n- [ ] Build BYOC SIP trunk configuration & health-ping verification endpoint\n- [ ] Support SRTP media encryption and custom SIP headers\n\n### Acceptance Criteria\n- [ ] Verified BYOC trunk routes inbound/outbound calls with SRTP enabled\n- [ ] Invalid SIP credentials return structured diagnostic error",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Global Multi-Carrier Failover & Automatic Health-Based Rerouting",
+          "description": "### Context & Objective\nMonitor carrier MOS/SIP 5xx rates in real time and automatically failover outbound/inbound routing between Plivo, Exotel, and Twilio.\n\n### Technical Tasks\n- [ ] Track per-carrier SIP error rate & jitter in Redis\n- [ ] Auto-reroute outbound calls to healthy backup carrier on carrier degradation\n\n### Acceptance Criteria\n- [ ] Simulated carrier 503 outage triggers automatic failover on the next dial attempt\n- [ ] Super Admin telemetry reflects live carrier health",
+          "type": "type:feature",
+          "priority": "priority:low",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-analytics-service",
+      "techStack": "springboot",
+      "repository": "solter-analytics-service",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Implement Call Logs ingestion, Transcript/Audio metadata & MCP Execution Trace APIs",
+          "description": "### Context & Objective\nPersist every completed call within 10 seconds of hangup, including recording URL, speaker-separated timestamped transcript, AI summary, turn latency, and MCP tool execution logs.\n\n### Technical Tasks\n- [ ] Flyway schema for `call_logs`, `call_transcript_turns`, and `mcp_execution_traces` scoped by `tenant_id`\n- [ ] `GET /api/v1/calls` (searchable, filterable by status `Completed|Transferred|Voicemail|Failed|Live`)\n- [ ] `GET /api/v1/calls/{id}` returning metadata, recording URL, transcript, and tool trace (`200 OK` / `4xx` / `5xx`)\n- [ ] Trigger outbound tenant webhooks (`call.completed`, `tool.executed`) with HMAC signature\n\n### Acceptance Criteria\n- [ ] Completed calls appear in `GET /api/v1/calls` within 10s of hangup\n- [ ] Webhook delivery retries with exponential backoff on non-2xx responses",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Executive Dashboard KPIs, Latency Percentiles (p50/p95) & BPO ROI Analytics",
+          "description": "### Context & Objective\nAggregate call volume, resolution rate (>75% target), p50/p95 turn latency, top triggered MCP tools, and cost-per-resolved-call savings vs human BPO.\n\n### Technical Tasks\n- [ ] `GET /api/v1/analytics/overview` & `GET /api/v1/analytics/latency` (p50/p95)\n- [ ] `GET /api/v1/analytics/tools` (top MCP tools & success/failure rates)\n\n### Acceptance Criteria\n- [ ] Queries execute in <150ms using indexed rollups\n- [ ] Unit & Testcontainers tests pass (>80% coverage)",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Automated QA Scoring, Customer Sentiment Graphs & CRM Auto-Sync (Salesforce/HubSpot)",
+          "description": "### Context & Objective\nScore every call automatically for script adherence, sentiment trajectory, and sync call outcomes/transcripts directly to Salesforce or HubSpot.\n\n### Technical Tasks\n- [ ] Post-call LLM QA evaluator generating `qa_score` (0-100) and sentiment timeline\n- [ ] HubSpot & Salesforce CRM sync worker on `call.completed` event\n\n### Acceptance Criteria\n- [ ] QA score & sentiment data appear on Call Detail & Analytics APIs\n- [ ] CRM sync logs delivery status and retries on transient errors",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Super Admin Platform-Wide Health, Latency Spike & Failed Integration Telemetry",
+          "description": "### Context & Objective\nProvide the internal Solter AI Super Admin team with cross-tenant visibility into global p95 latency spikes, failed MCP integrations, and system uptime.\n\n### Technical Tasks\n- [ ] `GET /api/v1/admin/telemetry/health`, `/latency-spikes`, and `/failed-tools`\n- [ ] Real-time alerting hooks (Slack/PagerDuty) when global p95 exceeds 600ms\n\n### Acceptance Criteria\n- [ ] Cross-tenant telemetry strictly requires `ROLE_SUPER_ADMIN`\n- [ ] Alert triggers within 30 seconds of sustained latency breach",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-billing-service",
+      "techStack": "springboot",
+      "repository": "solter-billing-service",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Implement Redis atomic Concurrency Slot Manager & Minute/Token Usage Metering",
+          "description": "### Context & Objective\nEnforce plan-based concurrent call slots (Free: 1 slot, Growth: 5, Pro: 10+) and track voice minutes + RAG/MCP token usage in real time.\n\n### Technical Tasks\n- [ ] Redis atomic acquire/release slot endpoints (`POST /api/v1/concurrency/acquire`, `/release`)\n- [ ] `GET /api/v1/billing/usage` returning live concurrent slots, voice minutes, and RAG/MCP tokens\n\n### Acceptance Criteria\n- [ ] Exceeding concurrent slot limit returns HTTP 409/429 with current vs max slots\n- [ ] Slot acquire/release executes in <5ms via Redis",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Razorpay/Stripe Subscriptions, Invoices & Marketplace Add-ons",
+          "description": "### Context & Objective\nSupport plan upgrades (Free -> Growth -> Pro), add-on concurrency slots, downloadable PDF invoices, and 1-click Marketplace pack installs.\n\n### Technical Tasks\n- [ ] `GET /api/v1/billing/plans`, `POST /api/v1/billing/checkout`, `POST /api/v1/billing/webhooks` (signature verified)\n- [ ] `GET /api/v1/billing/invoices` & `GET /api/v1/marketplace/packs`, `POST /api/v1/marketplace/install`\n\n### Acceptance Criteria\n- [ ] Forged webhook signatures return HTTP 400\n- [ ] Successful checkout updates tenant concurrency slots immediately",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Partner Marketplace Revenue Share & Super Admin Billing/Credit Controls",
+          "description": "### Context & Objective\nSupport partner payouts for paid Marketplace MCP packs and allow Solter Super Admins to issue promotional credits or custom enterprise contracts.\n\n### Technical Tasks\n- [ ] `POST /api/v1/admin/billing/{tenantId}/credits` & custom enterprise slot/minute overrides\n- [ ] Partner revenue ledger for paid Marketplace pack installations\n\n### Acceptance Criteria\n- [ ] Super Admin credit adjustments reflect immediately on tenant invoices\n- [ ] Partner ledger unit tests pass with >80% coverage",
+          "type": "type:feature",
+          "priority": "priority:low",
+          "phase": "phase-4"
+        }
+      ]
+    },
+    {
+      "name": "solter-web",
+      "techStack": "react",
+      "repository": "solter-web",
+      "phase": "phase-1",
+      "issues": [
+        {
+          "title": "Setup React architecture, constants, shared API client, i18n, theme & reusable UI primitives",
+          "description": "### Context & Objective\nEstablish the strict component-based React 18 + TypeScript + Tailwind foundation following `.github/docs/GUIDELINES.md` and the approved HTML designs in `designs/`.\n\n### Technical Tasks\n- [ ] Create single constants files: `src/constants/app.constants.ts` (feature flags `IS_FEATURE_ENABLED`, `IS_MOCK_DATA`) and `src/constants/api.constants.ts` (all API endpoints)\n- [ ] Create centralized API utility `src/services/api.ts` (error handling, auth headers, loading state)\n- [ ] Setup `i18next` localization (`src/locales/en.json`) with zero hardcoded UI strings\n- [ ] Build reusable shared components: `AppShell` (collapsible sidebar, separate Support nav, mobile bottom bar, org switcher, concurrency pill, Light/Dark toggle), `Loader`, `Modal`, `Toast`, `Badge`, `ScrollableTable` (`white-space: nowrap` for phone numbers), and `LazySection`\n\n### Acceptance Criteria\n- [ ] Zero direct `fetch`/`axios` calls inside page components\n- [ ] Theme toggle & responsive layout match approved `designs/assets/solter-ui.css`\n- [ ] Vitest unit tests pass for shared components & API client",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Auth, OTP Verification, Workspace Hub & Executive Dashboard pages",
+          "description": "### Context & Objective\nImplement onboarding and executive overview screens matching `designs/auth.html`, `designs/workspaces.html`, and `designs/dashboard.html`.\n\n### Technical Tasks\n- [ ] Build `AuthPage` (Login, Sign Up, 6-digit OTP step, SSO buttons)\n- [ ] Build `WorkspacesPage` (Org Switcher with Owner/Admin/Operator badges & Create Org modal)\n- [ ] Build `DashboardPage` (KPI cards, 7-day SVG chart, concurrency gauge, recent calls table)\n\n### Acceptance Criteria\n- [ ] Supports `IS_MOCK_DATA=true` and live API modes seamlessly\n- [ ] Unit tests cover auth flows, workspace switching, and dashboard rendering",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Voice Agents Studio (with WebRTC Test Simulator) & Call Logs / Live Monitor",
+          "description": "### Context & Objective\nImplement `designs/voice-agents.html` and `designs/call-logs.html` using modular, reusable components.\n\n### Technical Tasks\n- [ ] Build `VoiceAgentsPage` (slot meter, agent cards, voice/speed/prompt/KB/MCP form, WebRTC Test Call modal)\n- [ ] Build `CallLogsPage` (Call History + Live Calls tabs, Whisper/Takeover controls, audio waveform player, transcript & MCP tool execution trace)\n\n### Acceptance Criteria\n- [ ] Phone numbers in tables never wrap (`ScrollableTable`)\n- [ ] Unit tests verify agent form validation and call log detail inspection",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Knowledge Base & MCP Gateway (OpenAPI parser + Sandbox) pages",
+          "description": "### Context & Objective\nImplement `designs/knowledge-base.html` and `designs/mcp-gateway.html`.\n\n### Technical Tasks\n- [ ] Build `KnowledgeBasePage` (20MB drag-and-drop upload, `Ready/Processing/Failed` status, delete, semantic retrieval tester)\n- [ ] Build `McpGatewayPage` (OpenAPI 3.0/3.1 upload, pre-built connectors, endpoint ON/OFF toggles, AES-256 masked secret form, Test Tool Sandbox modal)\n\n### Acceptance Criteria\n- [ ] Secrets are always masked after saving\n- [ ] Unit tests cover file upload states, endpoint toggling, and sandbox execution",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-1"
+        },
+        {
+          "title": "Implement Settings (Telephony, BYOK Tokens, Custom RBAC Role CRUD, Delete Org) & Ops/Billing/Error/Support pages",
+          "description": "### Context & Objective\nImplement `designs/settings.html`, `campaigns.html`, `contacts.html`, `analytics.html`, `marketplace.html`, `billing.html`, `support.html`, `profile.html`, and `error.html`.\n\n### Technical Tasks\n- [ ] Build `SettingsPage` with tabs: Phone Numbers & SIP, AI Tokens & BYOK (MCP & RAG keys), Developer API & Webhooks, Team & Custom Role CRUD (granular permission matrix + user assignment), and Org Danger Zone (Delete Org confirmation)\n- [ ] Build `CampaignsPage`, `ContactsPage`, `AnalyticsPage`, `MarketplacePage`, `BillingPage`, `SupportPage`, `ProfilePage`, and `ErrorPage` (`404`, `409`, `500`, `403`, `429`, custom)\n\n### Acceptance Criteria\n- [ ] All routes render with consistent layout tokens, animations, and i18n keys\n- [ ] Unit tests cover Role CRUD, Delete Org confirmation guard, and ErrorPage code rendering",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Phase 3 UI: SSO/SAML Setup, URL/Drive KB Sync, Visual MCP Builder, Voice Cloning & Sentiment/QA Charts",
+          "description": "### Context & Objective\nAdd UI modules for Phase 3 Growth & Scale capabilities behind feature flags (`IS_FEATURE_ENABLED`).\n\n### Technical Tasks\n- [ ] Add SSO/SAML IdP config UI in `SettingsPage`\n- [ ] Add URL Crawler & Google Drive/Notion sync connectors in `KnowledgeBasePage`\n- [ ] Add OAuth 2.0 & Visual MCP Workflow builder in `McpGatewayPage`, Voice Cloning in `VoiceAgentsPage`, and QA/Sentiment graphs in `AnalyticsPage`\n\n### Acceptance Criteria\n- [ ] Features are gated cleanly via `IS_FEATURE_ENABLED` flags\n- [ ] Unit tests verify conditional rendering and form validation",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-3"
+        },
+        {
+          "title": "Implement Phase 4 UI: Internal Solter Super Admin Console (Platform Health, Tenant Limits & Audit Exports)",
+          "description": "### Context & Objective\nBuild the internal Super Admin dashboard (`ROLE_SUPER_ADMIN`) for monitoring cross-tenant latency spikes, failed MCP integrations, tenant overrides, and compliance exports.\n\n### Technical Tasks\n- [ ] Build `SuperAdminPage` guarded by `ROLE_SUPER_ADMIN` route guard\n- [ ] Display live global p95 latency, failed tool integration alerts, tenant limit override modal, and SOC2/DPDP audit export button\n\n### Acceptance Criteria\n- [ ] Non-Super-Admin users attempting to visit `/admin` render `ErrorPage` with `403`\n- [ ] Unit tests verify RBAC route guard and limit override actions",
+          "type": "type:feature",
+          "priority": "priority:medium",
+          "phase": "phase-4"
+        }
+      ]
+    }
+  ]
+}
