@@ -422,6 +422,49 @@
           "phase": "phase-4"
         }
       ]
+    },
+    {
+      "name": "solter-notification-service",
+      "techStack": "springboot",
+      "repository": "solter-notification-service",
+      "phase": "phase-2",
+      "issues": [
+        {
+          "title": "Setup Core Schema, Unified Dispatch API, Idempotency & Delivery Tracking",
+          "description": "### Context & Objective\nEstablish the Spring Boot notification service foundation (`solternotificationservice_db`, Flyway migrations, port `8088`, `/api` context path) with a unified dispatch API, idempotency, and per-channel delivery tracking.\n\n### Technical Tasks\n- [ ] Add Flyway migrations for `notification_requests`, `notification_deliveries`, `notification_templates`, `in_app_notifications`, and `notification_dead_letters` scoped by `tenant_id`\n- [ ] Expose `POST /api/v1/notifications/send` accepting `{ idempotencyKey, userId, templateKey, locale, channels, data, priority }` with `X-Tenant-ID` header\n- [ ] Implement Redis + DB idempotency guard preventing duplicate sends for the same `(tenantId, idempotencyKey)`\n- [ ] Track per-channel delivery states (`PENDING`, `SENT`, `FAILED`, `DELIVERED`) with status query endpoint `GET /api/v1/notifications/{id}`\n\n### Acceptance Criteria\n- [ ] Duplicate `idempotencyKey` returns the existing notification record without re-dispatching\n- [ ] Unit/integration tests cover unified payload validation, idempotency, and tenant isolation",
+          "type": "type:setup",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Multi-Channel & Multi-Locale Handlebars Template Engine",
+          "description": "### Context & Objective\nBuild a reusable `TemplateEngine` service supporting multi-channel and multi-locale templates keyed by `(tenantId, templateKey, channel, locale)`.\n\n### Technical Tasks\n- [ ] Integrate Handlebars (`com.github.jknack:handlebars`) for rendering `subject`, `htmlBody`, and `textBody`\n- [ ] Validate all required template variables before sending and fail fast with a clear `400` error when variables are missing\n- [ ] Add template management API (`GET/POST/PUT /api/v1/notifications/templates`) and seed default templates (e.g., `OTP_VERIFICATION`, `ORDER_CONFIRMED`)\n\n### Acceptance Criteria\n- [ ] `ORDER_CONFIRMED` / `OTP_VERIFICATION` render distinct `email` (`subject` + `htmlBody`) and `sms` (`textBody`) outputs per locale\n- [ ] Missing required variables are rejected before queueing/sending",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement NotificationChannel Strategy/Factory & Delivery Adapters (Email, SMS, Push, In-App)",
+          "description": "### Context & Objective\nImplement the extensible `NotificationChannel` Strategy/Factory pattern and concrete adapters for Email, SMS, Push, and In-App notifications.\n\n### Technical Tasks\n- [ ] Define `NotificationChannel` interface (`send(recipient, renderedContent, metadata)`) and `NotificationChannelFactory` registry\n- [ ] Implement `EmailNotificationChannel` (`spring-boot-starter-mail` / SMTP with dry-run fallback when unconfigured)\n- [ ] Implement `SmsNotificationChannel` (Twilio HTTP adapter) and `PushNotificationChannel` (FCM HTTP adapter) with timeouts and sandbox fallback\n- [ ] Implement `InAppNotificationChannel` (PostgreSQL persistence + `SseEmitter` real-time stream `GET /api/v1/notifications/in-app/stream` and `GET/PATCH /api/v1/notifications/in-app`)\n\n### Acceptance Criteria\n- [ ] New channels can be plugged in via Spring DI without modifying routing logic\n- [ ] Unit tests cover factory resolution and all 4 channel adapters",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Implement Decoupled Redis Queue Dispatcher, Priority Routing, Retries & DLQ",
+          "description": "### Context & Objective\nDecouple API ingestion from delivery execution using Redis queues, priority routing (`high` vs `normal`), exponential backoff retries, and a Dead Letter Queue (DLQ).\n\n### Technical Tasks\n- [ ] Enqueue channel delivery jobs into Redis priority queues (`high` processed before `normal`)\n- [ ] Implement async worker with exponential backoff retries for transient provider failures\n- [ ] Route permanently failed deliveries to `notification_dead_letters` (DLQ) + Redis DLQ and expose `GET /api/v1/notifications/dlq` & `POST /api/v1/notifications/dlq/{id}/retry`\n\n### Acceptance Criteria\n- [ ] `POST /api/v1/notifications/send` returns `202 Accepted` immediately while Redis worker executes delivery\n- [ ] Transient failures retry with backoff and permanent failures land in DLQ with `FAILED` status",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        },
+        {
+          "title": "Integrate Tenant OTP Verification with Notification Service, Gateway Route & API Docs",
+          "description": "### Context & Objective\nWire `solter-tenant-service` OTP registration/verification emails to `solter-notification-service`, expose `/api/v1/notifications/**` via `solter-api-gateway`, and finalize `docs/API.md` & `Agent.md`.\n\n### Technical Tasks\n- [ ] Update `solter-tenant-service` `AuthService` to dispatch `OTP_VERIFICATION` emails via `solter-notification-service` (`POST /api/v1/notifications/send`) with fallback safety\n- [ ] Add `/api/v1/notifications/**` route in `solter-api-gateway` `GatewayRoutesConfig.java`\n- [ ] Document all endpoints, payloads, and error codes in `solter-notification-service/docs/API.md` and `Agent.md`\n\n### Acceptance Criteria\n- [ ] Registering a user in `solter-tenant-service` dispatches OTP via `solter-notification-service`\n- [ ] All tests pass across `solter-notification-service`, `solter-tenant-service`, and `solter-api-gateway`",
+          "type": "type:feature",
+          "priority": "priority:high",
+          "phase": "phase-2"
+        }
+      ]
     }
   ]
 }
