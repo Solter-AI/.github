@@ -12,6 +12,7 @@ for REPO_DIR in $REPO_DIRS; do
         REPO_NAME=$(basename "$REPO_DIR")
         echo "Pulling latest changes: $REPO_NAME"
         cd "$REPO_DIR" || continue
+        git checkout main > /dev/null 2>&1
         git pull origin main > /dev/null 2>&1
     fi
 done
