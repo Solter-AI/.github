@@ -77,5 +77,6 @@ check_service "solter-voice-orchestrator" 8084 "/api/health"
 check_service "solter-telephony-bridge"   8085 "/api/health"
 check_service "solter-analytics-service"  8086 "/api/v1/calls"
 check_service "solter-billing-service"    8087 "/api/v1/billing/plans"
+check_service "solter-notification-service" 8088 "/api/v1/notifications/dlq"
 
 printf "${BLUE}══════════════════════════════════════════════════════════════════${NC}\n\n"

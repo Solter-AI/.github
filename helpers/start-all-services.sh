@@ -11,6 +11,7 @@
 #   8085  solter-telephony-bridge
 #   8086  solter-analytics-service
 #   8087  solter-billing-service
+#   8088  solter-notification-service
 #   3000  solter-web (Vite dev server)
 ###############################################################################
 
@@ -98,6 +99,7 @@ start_bg "solter-tenant-service"    8081 "$ROOT_DIR/solter-tenant-service"    "S
 start_bg "solter-mcp-gateway"       8083 "$ROOT_DIR/solter-mcp-gateway"       "SERVER_PORT=8083 DB_PORT=$DB_PORT SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect SPRING_JPA_HIBERNATE_DDL_AUTO=update mvn spring-boot:run"
 start_bg "solter-analytics-service" 8086 "$ROOT_DIR/solter-analytics-service" "SERVER_PORT=8086 DB_PORT=$DB_PORT SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect mvn spring-boot:run"
 start_bg "solter-billing-service"   8087 "$ROOT_DIR/solter-billing-service"   "SERVER_PORT=8087 DB_PORT=$DB_PORT SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect SPRING_JPA_HIBERNATE_DDL_AUTO=update mvn spring-boot:run"
+start_bg "solter-notification-service" 8088 "$ROOT_DIR/solter-notification-service" "[ -f .env ] && set -a && . ./.env && set +a; SERVER_PORT=8088 DB_PORT=$DB_PORT SPRING_JPA_HIBERNATE_DDL_AUTO=update mvn spring-boot:run"
 
 # Python FastAPI Microservices
 RAG_UVICORN="$ROOT_DIR/solter-rag-service/.venv/bin/uvicorn"
@@ -142,6 +144,7 @@ echo "  Voice Orchestrator:           http://localhost:8084"
 echo "  Telephony Bridge:             http://localhost:8085"
 echo "  Analytics Service:            http://localhost:8086"
 echo "  Billing Service:              http://localhost:8087"
+echo "  Notification Service:         http://localhost:8088"
 echo ""
 echo "  Check status: $ROOT_DIR/.github/helpers/status-all-services.sh"
 echo "  Stop all:     $ROOT_DIR/.github/helpers/stop-all-services.sh"

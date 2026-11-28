@@ -20,7 +20,7 @@ if [ -d "$PID_DIR" ]; then
 fi
 
 # Also ensure no child/orphan listeners remain on service ports
-for port in 3000 8080 8081 8082 8083 8084 8085 8086 8087; do
+for port in 3000 8080 8081 8082 8083 8084 8085 8086 8087 8088; do
   pids=$(lsof -ti :"$port" 2>/dev/null || true)
   if [ -n "$pids" ]; then
     echo "Stopping listener on port $port (PID $pids)..."
